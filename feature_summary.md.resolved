@@ -1,0 +1,226 @@
+# 🧠 AI Resume Analyzer — Complete Feature Summary
+
+> **A full-stack MERN application** that analyzes resumes, calculates ATS scores using NLP, identifies skill gaps, and recommends matching jobs through intelligent hybrid scoring.
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React.js, Vite, Tailwind CSS, Recharts, React Router, Lucide Icons |
+| **Backend** | Node.js, Express.js |
+| **Database** | MongoDB (Mongoose ODM) |
+| **NLP & Parsing** | `natural`, `compromise`, `pdf-parse`, `mammoth` |
+| **External API** | Adzuna Job Search API |
+
+---
+
+## 🔐 1. Authentication & Authorization
+
+| Feature | Details |
+|---|---|
+| **User Registration** | Name, email, password, optional industry preference. Passwords hashed with `bcryptjs` (10 salt rounds). |
+| **User Login** | Email + password authentication, returns JWT token. |
+| **JWT Protection** | All dashboard/API routes protected via [authMiddleware.js](file:///c:/Users/HP/Desktop/resumechecker/server/middleware/authMiddleware.js). Token stored client-side in `AuthContext`. |
+| **Protected Routes** | Frontend `<ProtectedRoute>` component prevents unauthenticated access to dashboard pages. |
+| **User Roles** | `user` and `admin` roles supported in schema. |
+| **Profile Endpoint** | `GET /api/users/profile` — returns user info + stored resume analysis data. |
+
+---
+
+## 📄 2. Resume Upload & Document Parsing
+
+| Feature | Details |
+|---|---|
+| **File Formats** | PDF (`.pdf`) and DOCX (`.docx`) supported |
+| **PDF Parsing** | Uses `pdf-parse` library for text extraction |
+| **DOCX Parsing** | Uses `mammoth` library for raw text extraction |
+| **Upload Middleware** | `multer`-based file upload middleware with size/type validation |
+| **Drag & Drop UI** | Beautiful upload zone with drag-and-drop support, file preview, and size display |
+| **Optional Inputs** | Industry selection (Software Dev, Data Science, DevOps), target keyword, and location |
+
+---
+
+## 🤖 3. NLP-Based Entity Extraction
+
+| Feature | Details |
+|---|---|
+| **Skill Detection** | Regex-based matching against a curated IT skills dictionary (25+ skills including `JavaScript`, `Python`, `React`, `Docker`, `AWS`, etc.) |
+| **Experience Extraction** | Section-aware parsing — detects "Experience" / "Employment History" headers and captures entries |
+| **Education Extraction** | Detects "Education" / "Academic Background" sections and captures entries |
+| **Section Awareness** | Parser tracks current section context and stops extracting when a new section (Skills, Projects, Certifications) begins |
+
+---
+
+## 📊 4. ATS Score Calculator (out of 100)
+
+The ATS scoring engine uses a **weighted heuristic model** with 6 categories:
+
+| Category | Weight | Scoring Logic |
+|---|---|---|
+| **Skills** | 35% | Based on count of extracted skills (10 = max score) |
+| **Keywords** | 20% | Checks for action verbs (`developed`, `managed`, `created`, `led`, `designed`, `optimized`, `implemented`) |
+| **Experience** | 20% | Binary — full score if experience section detected |
+| **Education** | 10% | Binary — full score if education section detected |
+| **Structure** | 10% | Word count heuristic (300–1200 words = ideal) |
+| **Grammar** | 5% | Baseline score (placeholder for future LanguageTool integration) |
+
+**Actionable Suggestions** are generated for each weak area (e.g., *"Add more industry-relevant skills"*, *"Use more action-oriented verbs"*).
+
+---
+
+## 🏭 5. Industry Templates & Readiness Scoring
+
+| Feature | Details |
+|---|---|
+| **Pre-built Templates** | 3 industry templates — **Software Development**, **Data Science**, **DevOps** |
+| **Weighted Skills** | Each template defines skills with importance weights (1-3) |
+| **Readiness Score** | Computes a weighted coverage percentage of how ready the user is for that industry |
+| **Skill Gap Report** | Shows **matched** vs **missing** skills relative to the selected industry |
+
+### Industry Template Examples:
+- **Software Development**: JavaScript (2), TypeScript (2), React (2), Node.js (2), SQL (2), Docker (1), AWS (1)...
+- **Data Science**: Python (3), SQL (2), AWS (1), Docker (1)
+- **DevOps**: Docker (3), Kubernetes (3), AWS (2), Linux (2), Azure (1), GCP (1)
+
+---
+
+## 💼 6. Job Search & Real-Time Fetching
+
+| Feature | Details |
+|---|---|
+| **Adzuna API Integration** | Fetches real-time job listings based on user skills/keywords |
+| **Location-aware Search** | Supports location parameter for geo-targeted job results |
+| **MongoDB Caching** | Jobs cached in DB with a **6-hour TTL** (auto-expiring via MongoDB TTL index) |
+| **Timeout & Fallback** | API calls timeout at **2.5 seconds** — falls back to cached DB jobs |
+| **Seeded Data** | [seeder.js](file:///c:/Users/HP/Desktop/resumechecker/server/seeder.js) seeds sample jobs for offline/demo usage |
+| **Job Model** | Stores title, company, description, location, salary range, required skills, redirect URL, and TF-IDF vector |
+
+---
+
+## 🎯 7. Hybrid Job Matching Engine
+
+The matching engine uses a **dual-algorithm approach**:
+
+```
+Hybrid Score = (Cosine Similarity × 70%) + (Skill Overlap × 30%)
+```
+
+| Algorithm | Weight | How It Works |
+|---|---|---|
+| **Cosine Similarity (TF-IDF)** | 70% | Builds TF-IDF vectors for user skills and job skills, computes cosine similarity |
+| **Skill Overlap** | 30% | Direct set-intersection percentage of matched vs total job skills |
+
+### Additional Matching Features:
+- **Skill Normalization** — case-insensitive, trimmed matching
+- **Top-5 Ranking** — returns the 5 best-matched jobs sorted by hybrid score
+- **Job Market Readiness Score** — average match score across all recommended jobs
+
+---
+
+## 🔍 8. Skill Gap Analysis
+
+| Feature | Details |
+|---|---|
+| **Per-Job Gap** | For each recommended job, shows matched ✅ and missing ❌ skills |
+| **Aggregate Gap** | Collects up to 8 unique missing skills across all recommended jobs |
+| **Coverage Percentage** | Shows what % of required skills the user already has |
+| **Visual Skill Tags** | Frontend displays green (matched) and red (missing) skill badges |
+
+---
+
+## 🚀 9. One-Shot Analyze Endpoint
+
+The **`POST /api/analyze`** endpoint orchestrates everything in a single request:
+
+```
+Upload Resume → Parse → Extract Entities → ATS Score → Industry Readiness 
+→ Fetch Jobs → Hybrid Matching → Skill Gap → Return Unified Response
+```
+
+### Response Structure:
+| Field | Description |
+|---|---|
+| `atsScore` | Overall score + breakdown + improvement suggestions |
+| `extractedSkills` | Array of detected skills from resume |
+| `industryReadiness` | Weighted readiness score for selected industry |
+| `industrySkillGap` | Missing/matched skills for the industry template |
+| `jobMarketReadiness` | Average match score across top job matches |
+| `skillGap` | Aggregate missing skills + coverage |
+| `recommendedJobs` | Top 5 ranked jobs with match scores and skill gaps |
+
+---
+
+## 🖥️ 10. Frontend Pages & UI
+
+| Page | Route | Description |
+|---|---|---|
+| **Login** | `/login` | Email + password authentication form |
+| **Register** | `/register` | Registration with name, email, password, and industry selection |
+| **Dashboard Home** | `/dashboard` | Landing page after login |
+| **Resume Upload** | `/upload` | Drag-and-drop upload with industry/keyword/location inputs + animated analysis flow |
+| **ATS Analysis** | `/analysis` | Pie chart of ATS score, progress bars for each category, extracted skills display, and improvement suggestions |
+| **Job Matches** | `/jobs` | Ranked job cards with match scores, company info, skill gap badges, and "Apply Now" links |
+
+### UI Components:
+- **Navbar** — Top navigation bar
+- **Sidebar** — Dashboard navigation sidebar with route links
+- **DashboardLayout** — Shared layout with Navbar + Sidebar + content outlet
+- **ProtectedRoute** — Auth guard component
+
+---
+
+## 🛡️ 11. Production Safety Features
+
+| Feature | Details |
+|---|---|
+| **Rate Limiting** | 10 requests/minute on `/api/analyze` (via `express-rate-limit`) |
+| **API Timeout** | 2.5s timeout on Adzuna API with graceful fallback |
+| **Job Caching** | 6-hour MongoDB TTL prevents stale data and excessive API calls |
+| **Input Validation** | [validationMiddleware.js](file:///c:/Users/HP/Desktop/resumechecker/server/middleware/validationMiddleware.js) for request sanitization |
+| **Error Handling** | Centralized [errorMiddleware.js](file:///c:/Users/HP/Desktop/resumechecker/server/middleware/errorMiddleware.js) with proper HTTP status codes |
+| **Metrics** | [metricsMiddleware.js](file:///c:/Users/HP/Desktop/resumechecker/server/middleware/metricsMiddleware.js) for request monitoring |
+| **Password Security** | Passwords never returned in API responses (`select: false`) |
+| **Email Validation** | Regex-based email format validation in User schema |
+
+---
+
+## 📌 API Endpoints Summary
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/users/register` | Public | Register new user |
+| `POST` | `/api/users/login` | Public | Login & get JWT |
+| `GET` | `/api/users/profile` | 🔒 | Get user profile + resume data |
+| **`POST`** | **`/api/analyze`** | 🔒 | **One-shot full analysis** (ATS + Jobs + Gaps) |
+| `POST` | `/api/resumes/upload` | 🔒 | Legacy: Upload resume |
+| `GET` | `/api/resumes/analysis` | 🔒 | Legacy: Get ATS analysis |
+| `GET` | `/api/jobs/recommendations` | 🔒 | Legacy: Get job recommendations |
+| `GET` | `/api/jobs/search` | 🔒 | Legacy: Search jobs |
+
+---
+
+## 📂 Project Structure
+
+```
+resumechecker/
+├── client/                     # React Frontend (Vite)
+│   └── src/
+│       ├── api/axios.js        # Axios instance with auth headers
+│       ├── components/         # Navbar, Sidebar, ProtectedRoute
+│       ├── context/            # AuthContext (JWT state management)
+│       ├── layouts/            # DashboardLayout
+│       └── pages/              # Login, Register, DashboardHome,
+│                               # ResumeUpload, ATSAnalysis, JobMatches
+└── server/                     # Express Backend
+    ├── config/                 # DB connection config
+    ├── controllers/            # User, Resume, Job, Analyze controllers
+    ├── middleware/              # Auth, Error, Rate Limit, Upload, Validation, Metrics
+    ├── models/                 # User, Job (Mongoose schemas)
+    ├── routes/                 # User, Resume, Job, Analyze routes
+    ├── services/               # 7 service modules (parsing, ATS, matching,
+    │                           # industry template/readiness, job fetch, analyze)
+    ├── utils/                  # JWT token generator
+    └── seeder.js               # Sample job data seeder
+```
