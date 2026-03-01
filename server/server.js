@@ -32,6 +32,9 @@ app.use('/api/resumes', require('./routes/resumeRoutes'));
 app.use('/api/jobs', require('./routes/jobRoutes'));
 app.use('/api/analyze', require('./routes/analyzeRoutes'));
 app.use('/api/system', require('./routes/systemRoutes'));
+app.use('/api/cover-letter', require('./routes/coverLetterRoutes'));
+app.use('/api/applications', require('./routes/applicationRoutes'));
+app.use('/api/interview', require('./routes/interviewRoutes'));
 
 // Error handling
 app.use(notFound);

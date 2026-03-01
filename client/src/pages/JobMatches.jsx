@@ -4,8 +4,9 @@ import { AuthContext } from '../context/AuthContext';
 import ScoreRing from '../components/ScoreRing';
 import {
   Briefcase, Building2, Target, CheckCircle, XCircle,
-  ExternalLink, TrendingUp, MapPin,
+  ExternalLink, TrendingUp, MapPin, FileText, Sparkles, X, Mic
 } from 'lucide-react';
+import MockInterviewModal from '../components/MockInterviewModal';
 
 const getFitLabel = (score) => {
   if (score >= 75) return 'High Fit';
@@ -19,6 +20,36 @@ const JobMatches = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [generatingLetterFor, setGeneratingLetterFor] = useState(null);
+  const [coverLetterContent, setCoverLetterContent] = useState('');
+  const [showLetterModal, setShowLetterModal] = useState(false);
+
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [interviewJob, setInterviewJob] = useState(null);
+
+  const handleStartInterview = (job) => {
+    setInterviewJob(job);
+    setShowInterviewModal(true);
+  };
+
+  const handleGenerateLetter = async (job) => {
+    try {
+      setGeneratingLetterFor(job._id || job.id || job.title);
+      setShowLetterModal(true);
+      setCoverLetterContent('Generating your tailored cover letter with Google Gemini AI...');
+      const cached = loadAnalysis() || {};
+      const payload = {
+        resumeData: cached.skills || cached.extractedData || cached,
+        jobData: job
+      };
+      const res = await api.post('/cover-letter/generate', payload);
+      setCoverLetterContent(res.data.data);
+    } catch (err) {
+      setCoverLetterContent('Failed to generate cover letter. ' + (err.response?.data?.message || err.message));
+    } finally {
+      setGeneratingLetterFor(null);
+    }
+  };
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -170,12 +201,75 @@ const JobMatches = () => {
                   >
                     Apply Now <ExternalLink size={14} />
                   </a>
+                  <button
+                    onClick={() => handleGenerateLetter(job)}
+                    disabled={generatingLetterFor === (job._id || job.id || job.title)}
+                    className="mt-2 w-full py-2.5 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    {generatingLetterFor === (job._id || job.id || job.title) ? (
+                      <span className="animate-pulse">Generating...</span>
+                    ) : (
+                      <>Cover Letter <Sparkles size={14} /></>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleStartInterview(job)}
+                    className="mt-2 w-full py-2.5 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    Practice Interview <Mic size={14} />
+                  </button>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Cover Letter Modal */}
+      {showLetterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-dark-card w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-dark-border">
+              <div className="flex items-center gap-2">
+                <FileText className="text-primary-500" />
+                <h3 className="font-bold text-gray-900 dark:text-white text-lg">AI Generated Cover Letter</h3>
+              </div>
+              <button onClick={() => setShowLetterModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                {coverLetterContent}
+              </div>
+            </div>
+            <div className="p-5 border-t border-gray-100 dark:border-dark-border bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+              <button
+                onClick={() => setShowLetterModal(false)}
+                className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50 rounded-xl font-medium transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(coverLetterContent);
+                  alert('Copied to clipboard!');
+                }}
+                className="px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center gap-2"
+              >
+                Copy Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <MockInterviewModal
+        isOpen={showInterviewModal}
+        onClose={() => setShowInterviewModal(false)}
+        jobTitle={interviewJob?.title || 'Unknown Role'}
+        resumeSkills={loadAnalysis()?.skills || 'General Software Engineering'}
+      />
     </div>
   );
 };

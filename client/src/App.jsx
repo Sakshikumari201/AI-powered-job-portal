@@ -10,8 +10,10 @@ import Register from './pages/Register';
 import DashboardLayout from './layouts/DashboardLayout';
 import DashboardHome from './pages/DashboardHome';
 import ResumeUpload from './pages/ResumeUpload';
+import ResumeBuilder from './pages/ResumeBuilder';
 import ATSAnalysis from './pages/ATSAnalysis';
 import JobMatches from './pages/JobMatches';
+import JobTracker from './pages/JobTracker';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -29,8 +31,10 @@ function App() {
               <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route path="dashboard" element={<DashboardHome />} />
                 <Route path="upload" element={<ResumeUpload />} />
+                <Route path="builder" element={<ResumeBuilder />} />
                 <Route path="analysis" element={<ATSAnalysis />} />
                 <Route path="jobs" element={<JobMatches />} />
+                <Route path="tracker" element={<JobTracker />} />
               </Route>
             </Routes>
           </Router>

@@ -1,13 +1,15 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FileText, Target, Briefcase } from 'lucide-react';
+import { LayoutDashboard, FileText, Target, Briefcase, ListTodo, PenTool } from 'lucide-react';
 
 const Sidebar = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Upload Resume', path: '/upload', icon: FileText },
+    { name: 'Resume Builder', path: '/builder', icon: PenTool },
     { name: 'ATS Score & Gap', path: '/analysis', icon: Target },
     { name: 'Job Matches', path: '/jobs', icon: Briefcase },
+    { name: 'Job Tracker', path: '/tracker', icon: ListTodo },
   ];
 
   return (
