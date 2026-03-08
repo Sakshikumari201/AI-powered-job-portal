@@ -1,0 +1,16 @@
+{
+  "name": "resume-analyzer",
+  "version": "1.0.0",
+  "description": "AI Resume Analyzer, Job Match & Career Planner Platform",
+  "scripts": {
+    "start": "node server/server.js",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "cd client && npm install && npm run build && cd ../server && npm install",
+    "render-build": "npm run build"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

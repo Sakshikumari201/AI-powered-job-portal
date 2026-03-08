@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
+import PageWrapper from '../components/PageWrapper';
 
 /* ─── Staged Loading Steps ────────────────────────────────────────────────── */
 const LOADING_STAGES = [
@@ -160,8 +161,8 @@ const ResumeUpload = () => {
   /* ── SUCCESS STATE ─────────────────────────────────────────────────── */
   if (success) {
     return (
-      <div className="max-w-2xl mx-auto flex items-center justify-center" style={{ minHeight: '75vh' }}>
-        <div className="text-center space-y-8 animate-scale-in">
+      <PageWrapper className="p-12 flex flex-col items-center justify-center space-y-6 text-center animate-fade-in-up" style={{ minHeight: '70vh' }}>
+        <div className="max-w-md w-full p-8 bg-white dark:bg-dark-card rounded-[2rem] shadow-2xl space-y-8 border border-gray-100 dark:border-dark-border">
           {/* Success badge */}
           <div className="relative mx-auto w-24 h-24">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-green-500 rounded-3xl animate-pulse-soft opacity-30 scale-125" />
@@ -183,13 +184,13 @@ const ResumeUpload = () => {
           </div>
           <p className="text-xs text-gray-400">Redirecting to your results...</p>
         </div>
-      </div>
+      </PageWrapper>
     );
   }
 
   /* ── MAIN UPLOAD UI ─────────────────────────────────────────────────── */
   return (
-    <div className="max-w-4xl mx-auto space-y-7 pb-8">
+    <PageWrapper className="max-w-4xl mx-auto space-y-7 pb-8">
       {/* ─── Hero Header ──────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-accent-600 p-8 text-white shadow-xl animate-fade-in">
         {/* Background decorations */}
@@ -264,9 +265,9 @@ const ResumeUpload = () => {
             /* ── Empty drop zone ─────────────────────────────────── */
             <label
               htmlFor="resume-upload"
-              className={`cursor-pointer block p-10 transition-all duration-300 border-b-2 ${dragActive
-                ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-400'
-                : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50'
+              className={`cursor-pointer block p-10 m-4 rounded-2xl transition-all duration-300 border-2 border-dashed ${dragActive
+                ? 'bg-blue-50 dark:bg-primary-900/20 border-blue-500 scale-105 shadow-xl'
+                : 'border-transparent hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                 }`}
             >
               <div className="flex flex-col items-center space-y-5">
@@ -554,9 +555,9 @@ const ResumeUpload = () => {
           <button
             onClick={handleUpload}
             disabled={!file || loading}
-            className={`w-full py-4 px-6 rounded-xl font-bold text-sm transition-all duration-300 flex items-center justify-center gap-3 relative overflow-hidden ${!file || loading
-              ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-primary-600 via-primary-500 to-accent-600 text-white hover:shadow-2xl hover:shadow-primary-300/40 hover:-translate-y-0.5 active:translate-y-0 active:shadow-lg group'
+            className={`w-full py-4 px-6 rounded-xl font-bold text-sm transition-transform duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-3 relative overflow-hidden ${!file || loading
+              ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed scale-100'
+              : 'bg-gradient-to-r from-primary-600 via-primary-500 to-accent-600 text-white hover:shadow-2xl hover:shadow-primary-300/40 group'
               }`}
           >
             {/* Button shine effect */}
@@ -593,7 +594,7 @@ const ResumeUpload = () => {
           Your resume is processed securely and never shared with third parties.
         </p>
       </div>
-    </div>
+    </PageWrapper>
   );
 };
 

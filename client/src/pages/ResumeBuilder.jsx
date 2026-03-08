@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Download, Plus, Trash2, Edit3, LayoutTemplate } from 'lucide-react';
+import { Download, Plus, Trash2, Edit3, LayoutTemplate, Briefcase } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
+import PageWrapper from '../components/PageWrapper';
 
 const ResumeBuilder = () => {
   const resumeRef = useRef();
@@ -46,7 +47,7 @@ const ResumeBuilder = () => {
   const removeEdu = (id) => setEducation(education.filter(e => e.id !== id));
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-8 flex flex-col lg:flex-row gap-6">
+    <PageWrapper className="max-w-7xl mx-auto space-y-8 pb-8 flex flex-col lg:flex-row gap-6">
 
       {/* Left Column: Form Controls */}
       <div className="flex-1 space-y-6 overflow-y-auto max-h-[85vh] pr-4 no-scrollbar">
@@ -77,7 +78,7 @@ const ResumeBuilder = () => {
         <div className="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-border space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="font-bold text-lg dark:text-white flex items-center gap-2"><Briefcase size={18} /> Experience</h2>
-            <button onClick={addExp} className="text-sm flex items-center gap-1 text-blue-600 hover:text-blue-700"><Plus size={16} /> Add Role</button>
+            <button onClick={addExp} className="text-sm flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-transform duration-200 hover:scale-[1.03] active:scale-95"><Plus size={16} /> Add Role</button>
           </div>
           {experience.map((exp, idx) => (
             <div key={exp.id} className="p-4 border dark:border-gray-700 rounded-xl space-y-3 relative group">
@@ -104,7 +105,7 @@ const ResumeBuilder = () => {
         <div className="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-border space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="font-bold text-lg dark:text-white flex items-center gap-2">Education</h2>
-            <button onClick={addEdu} className="text-sm flex items-center gap-1 text-blue-600 hover:text-blue-700"><Plus size={16} /> Add School</button>
+            <button onClick={addEdu} className="text-sm flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-transform duration-200 hover:scale-[1.03] active:scale-95"><Plus size={16} /> Add School</button>
           </div>
           {education.map((edu, idx) => (
             <div key={edu.id} className="p-4 border dark:border-gray-700 rounded-xl space-y-3 relative group">
@@ -135,7 +136,7 @@ const ResumeBuilder = () => {
       {/* Right Column: Live A4 Preview & Export */}
       <div className="flex-1 flex flex-col pt-4 lg:pt-0">
         <div className="flex justify-end mb-4">
-          <button onClick={handleExportPDF} className="bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-6 py-2.5 rounded-xl font-semibold hover:bg-gray-800 flex items-center gap-2 shadow-lg transition-all active:scale-95">
+          <button onClick={handleExportPDF} className="bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 px-6 py-2.5 rounded-xl font-semibold hover:bg-gray-800 flex items-center gap-2 shadow-lg transition-transform duration-200 hover:scale-[1.03] active:scale-95">
             <Download size={18} /> Export PDF
           </button>
         </div>
@@ -218,12 +219,8 @@ const ResumeBuilder = () => {
         </div>
       </div>
 
-    </div>
+    </PageWrapper>
   );
 };
-
-function Briefcase(props) {
-  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>;
-}
 
 export default ResumeBuilder;

@@ -7,6 +7,8 @@ import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
 import ScoreRing from '../components/ScoreRing';
 import AnimatedCounter from '../components/AnimatedCounter';
+import PageWrapper from '../components/PageWrapper';
+import { motion } from 'framer-motion';
 import {
   AlertCircle, CheckCircle, TrendingUp, BookOpen,
   Zap, Shield, Award, Target, ArrowRight, Lightbulb,
@@ -129,7 +131,7 @@ const ATSAnalysis = () => {
   const { atsScore, suggestions, skills, industryReadiness, jobMarketReadiness, industrySkillGap } = data;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-8">
+    <PageWrapper className="max-w-6xl mx-auto space-y-8 pb-8">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="animate-fade-in">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ATS Score & Analysis</h1>
@@ -175,7 +177,7 @@ const ATSAnalysis = () => {
         <div className={`bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-dark-border hover-lift ${revealed ? 'animate-fade-in-up stagger-3' : 'opacity-0'}`}>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Resume Strength Radar</h2>
           <p className="text-xs text-gray-400 mb-4">Multi-dimensional analysis of your resume quality</p>
-          <div className="h-64">
+          <div className="h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                 <PolarGrid stroke="#e5e7eb" />
@@ -188,6 +190,8 @@ const ATSAnalysis = () => {
                   fill="#3b82f6"
                   fillOpacity={0.2}
                   strokeWidth={2}
+                  isAnimationActive={true}
+                  animationDuration={1000}
                 />
                 <Tooltip
                   contentStyle={{
@@ -268,21 +272,33 @@ const ATSAnalysis = () => {
           )}
 
           {/* Matched + Missing badges */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {skills.map((skill, idx) => {
               const isMatched = industrySkillGap?.matched?.includes(skill.toLowerCase());
+              // Randomly assign a pastel color for unmatched skills to create a "skill cloud" feel
+              const cloudColors = [
+                'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+                'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
+                'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+                'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800',
+                'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800'
+              ];
+              const randomColor = cloudColors[idx % cloudColors.length];
+
               return (
-                <span
+                <motion.span
                   key={idx}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105 ${isMatched
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800'
-                    : 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: idx * 0.05, duration: 0.3 }}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md cursor-default border ${isMatched
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700'
+                    : randomColor
                     }`}
-                  style={{ animationDelay: `${idx * 0.03}s` }}
                 >
-                  {isMatched && <CheckCircle size={12} />}
+                  {isMatched && <CheckCircle size={13} />}
                   {skill}
-                </span>
+                </motion.span>
               );
             })}
           </div>
@@ -367,7 +383,7 @@ const ATSAnalysis = () => {
           <span>Match: {data.performance.matchMs}ms</span>
         </div>
       )}
-    </div>
+    </PageWrapper>
   );
 };
 

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import PageWrapper from '../components/PageWrapper';
 import {
   LogIn, Moon, Sun, Sparkles, Mail, Lock, Eye, EyeOff,
   ArrowRight, Shield, Zap, BarChart3, ChevronRight,
@@ -53,11 +54,11 @@ const Login = () => {
   ];
 
   return (
-    <div className="min-h-screen flex bg-secondary-50 dark:bg-dark-bg transition-colors duration-300">
+    <PageWrapper className="min-h-screen flex bg-secondary-50 dark:bg-dark-bg transition-colors duration-300">
       {/* Theme toggle */}
       <button
         onClick={toggleTheme}
-        className="fixed top-5 right-5 w-10 h-10 rounded-xl bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border flex items-center justify-center hover:shadow-lg transition-all z-10"
+        className="fixed top-5 right-5 w-10 h-10 rounded-xl bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border flex items-center justify-center hover:shadow-lg transition-transform hover:scale-[1.03] active:scale-95 duration-200 z-10"
       >
         {darkMode ? <Sun size={18} className="text-amber-500" /> : <Moon size={18} className="text-gray-500" />}
       </button>
@@ -66,11 +67,11 @@ const Login = () => {
       <div className="hidden lg:flex lg:w-5/12 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-600 via-primary-700 to-accent-600" />
         {/* Decorative circles */}
-        <div className="absolute top-20 -left-20 w-80 h-80 bg-white/5 rounded-full" />
-        <div className="absolute bottom-20 -right-20 w-64 h-64 bg-white/5 rounded-full" />
-        <div className="absolute top-1/3 right-12 w-40 h-40 bg-white/5 rounded-full" />
-        <div className="absolute bottom-1/3 left-8 w-3 h-3 bg-white/20 rounded-full" />
-        <div className="absolute top-1/4 left-1/3 w-2 h-2 bg-white/15 rounded-full" />
+        <div className="absolute top-20 -left-20 w-80 h-80 bg-white/10 blur-3xl rounded-full animate-pulse-soft mix-blend-overlay" />
+        <div className="absolute bottom-10 -right-10 w-72 h-72 bg-accent-400/30 blur-3xl rounded-full animate-pulse-soft mix-blend-overlay" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/3 right-12 w-40 h-40 bg-white/5 rounded-full animate-pulse-soft" style={{ animationDelay: '2s' }} />
+        <div className="absolute bottom-1/3 left-8 w-3 h-3 bg-white/20 rounded-full animate-bounce" />
+        <div className="absolute top-1/4 left-1/3 w-2 h-2 bg-white/15 rounded-full animate-ping" style={{ animationDelay: '0.5s' }} />
 
         <div className="relative flex flex-col justify-center px-12 py-16 text-white z-10">
           {/* Logo */}
@@ -92,17 +93,17 @@ const Login = () => {
           </p>
 
           {/* Feature list */}
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3">
             {features.map((f, i) => {
               const Icon = f.icon;
               return (
-                <div key={i} className="flex items-center gap-4 group">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10 group-hover:bg-white/15 transition-colors">
-                    <Icon size={18} className="text-white/80" />
+                <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md group hover:bg-white/10 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300">
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                    <Icon size={18} className="text-white/90 group-hover:scale-110 transition-transform duration-300" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold">{f.label}</p>
-                    <p className="text-xs text-white/50">{f.desc}</p>
+                    <p className="text-sm font-bold text-white shadow-sm">{f.label}</p>
+                    <p className="text-xs text-white/70">{f.desc}</p>
                   </div>
                 </div>
               );
@@ -201,7 +202,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all shadow-lg shadow-primary-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed group relative overflow-hidden"
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-transform duration-200 shadow-lg shadow-primary-200 hover:scale-[1.03] active:scale-95 disabled:scale-100 disabled:opacity-60 disabled:cursor-not-allowed group relative overflow-hidden"
             >
               {!loading && <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/15 to-transparent" />}
               {loading ? (
@@ -223,7 +224,7 @@ const Login = () => {
           </p>
         </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 };
 

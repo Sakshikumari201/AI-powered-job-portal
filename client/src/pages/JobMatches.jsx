@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
 import ScoreRing from '../components/ScoreRing';
+import PageWrapper from '../components/PageWrapper';
 import {
   Briefcase, Building2, Target, CheckCircle, XCircle,
   ExternalLink, TrendingUp, MapPin, FileText, Sparkles, X, Mic
@@ -105,7 +106,7 @@ const JobMatches = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-8">
+    <PageWrapper className="max-w-5xl mx-auto space-y-8 pb-8">
       {/* Header */}
       <div className="animate-fade-in">
         <div className="flex items-center gap-3 mb-1">
@@ -134,27 +135,32 @@ const JobMatches = () => {
           return (
             <div
               key={job._id || idx}
-              className="bg-white dark:bg-dark-card rounded-2xl p-0 shadow-sm border border-gray-100 dark:border-dark-border hover-lift hover-glow transition-all duration-300 overflow-hidden animate-fade-in-up"
+              className="bg-white dark:bg-dark-card rounded-2xl p-0 shadow-sm hover:shadow-xl hover:border-primary-400 dark:hover:border-primary-500 border border-gray-100 dark:border-dark-border hover:-translate-y-1 transition-all duration-300 overflow-hidden animate-fade-in-up"
               style={{ animationDelay: `${idx * 0.1}s` }}
             >
               {/* Rank badge */}
               <div className="flex items-stretch">
                 {/* Left — Job Info */}
                 <div className="flex-1 p-6 space-y-4">
-                  <div className="flex items-start gap-3">
-                    {/* Rank number */}
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ${idx === 0 ? 'bg-amber-100 text-amber-700' :
-                      idx === 1 ? 'bg-gray-100 text-gray-600' :
-                        idx === 2 ? 'bg-orange-100 text-orange-700' :
-                          'bg-gray-50 text-gray-400'
-                      }`}>
-                      #{idx + 1}
+                  <div className="flex items-start gap-4">
+                    {/* Rank number / Company Logo */}
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 flex items-center justify-center border border-blue-100 dark:border-blue-800 shadow-sm">
+                        <Building2 className="w-6 h-6 text-blue-500" />
+                      </div>
+                      <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm ${idx === 0 ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                        idx === 1 ? 'bg-gray-100 text-gray-600 border border-gray-200' :
+                          idx === 2 ? 'bg-orange-100 text-orange-700 border border-orange-200' :
+                            'bg-gray-50 text-gray-400 border border-gray-200'
+                        }`}>
+                        #{idx + 1}
+                      </div>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{job.title}</h3>
-                      <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        <span className="flex items-center gap-1"><Building2 size={14} />{job.company}</span>
-                        {job.location && <span className="flex items-center gap-1"><MapPin size={14} />{job.location}</span>}
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight mb-1 cursor-pointer hover:text-primary-600 transition-colors">{job.title}</h3>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-gray-400 mt-1.5">
+                        <span className="flex items-center gap-1.5 font-medium"><Building2 size={16} className="text-gray-400" /> {job.company}</span>
+                        {job.location && <span className="flex items-center gap-1.5"><MapPin size={16} className="text-gray-400" />{job.location}</span>}
                       </div>
                     </div>
                   </div>
@@ -197,14 +203,14 @@ const JobMatches = () => {
                     href={job.redirect_url || job.url || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-4 w-full py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg active:scale-[0.97]"
+                    className="mt-4 w-full py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 text-sm font-semibold rounded-xl transition-transform duration-200 flex items-center justify-center gap-2 hover:shadow-lg hover:scale-[1.03] active:scale-95"
                   >
                     Apply Now <ExternalLink size={14} />
                   </a>
                   <button
                     onClick={() => handleGenerateLetter(job)}
                     disabled={generatingLetterFor === (job._id || job.id || job.title)}
-                    className="mt-2 w-full py-2.5 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                    className="mt-2 w-full py-2.5 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 text-sm font-semibold rounded-xl transition-transform hover:scale-[1.03] active:scale-95 duration-200 flex items-center justify-center gap-2"
                   >
                     {generatingLetterFor === (job._id || job.id || job.title) ? (
                       <span className="animate-pulse">Generating...</span>
@@ -214,7 +220,7 @@ const JobMatches = () => {
                   </button>
                   <button
                     onClick={() => handleStartInterview(job)}
-                    className="mt-2 w-full py-2.5 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                    className="mt-2 w-full py-2.5 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 text-sm font-semibold rounded-xl transition-transform hover:scale-[1.03] active:scale-95 duration-200 flex items-center justify-center gap-2"
                   >
                     Practice Interview <Mic size={14} />
                   </button>
@@ -246,7 +252,7 @@ const JobMatches = () => {
             <div className="p-5 border-t border-gray-100 dark:border-dark-border bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
               <button
                 onClick={() => setShowLetterModal(false)}
-                className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50 rounded-xl font-medium transition-colors"
+                className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50 rounded-xl font-medium transition-transform hover:scale-[1.03] active:scale-95 duration-200"
               >
                 Close
               </button>
@@ -255,7 +261,7 @@ const JobMatches = () => {
                   navigator.clipboard.writeText(coverLetterContent);
                   alert('Copied to clipboard!');
                 }}
-                className="px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center gap-2"
+                className="px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-transform duration-200 hover:scale-[1.03] active:scale-95 flex items-center gap-2"
               >
                 Copy Details
               </button>
@@ -270,7 +276,7 @@ const JobMatches = () => {
         jobTitle={interviewJob?.title || 'Unknown Role'}
         resumeSkills={loadAnalysis()?.skills || 'General Software Engineering'}
       />
-    </div>
+    </PageWrapper>
   );
 };
 

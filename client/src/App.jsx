@@ -17,26 +17,39 @@ import JobTracker from './pages/JobTracker';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
+import { useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<Navigate to="/dashboard" />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+          <Route path="dashboard" element={<DashboardHome />} />
+          <Route path="upload" element={<ResumeUpload />} />
+          <Route path="builder" element={<ResumeBuilder />} />
+          <Route path="analysis" element={<ATSAnalysis />} />
+          <Route path="jobs" element={<JobMatches />} />
+          <Route path="tracker" element={<JobTracker />} />
+        </Route>
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <ThemeProvider>
         <AuthProvider>
           <Router>
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-
-              <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                <Route path="dashboard" element={<DashboardHome />} />
-                <Route path="upload" element={<ResumeUpload />} />
-                <Route path="builder" element={<ResumeBuilder />} />
-                <Route path="analysis" element={<ATSAnalysis />} />
-                <Route path="jobs" element={<JobMatches />} />
-                <Route path="tracker" element={<JobTracker />} />
-              </Route>
-            </Routes>
+            <AnimatedRoutes />
           </Router>
         </AuthProvider>
       </ThemeProvider>

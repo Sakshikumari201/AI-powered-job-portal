@@ -23,13 +23,13 @@ const Sidebar = () => {
                 key={item.name}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${isActive
-                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200'
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-r-xl rounded-l-sm text-sm font-medium transition-all duration-200 group ${isActive
+                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm border-l-4 border-primary-500'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200 border-l-4 border-transparent'
                   }`
                 }
               >
-                <Icon size={18} />
+                <Icon className="w-5 h-5" />
                 {item.name}
               </NavLink>
             );
