@@ -7,6 +7,9 @@ const connectDB = async () => {
     logger.info({ host: conn.connection.host }, 'MongoDB connected');
   } catch (error) {
     logger.error({ err: error.message }, 'Error connecting to MongoDB');
+    if (process.env.NETLIFY) {
+      throw error;
+    }
     process.exit(1);
   }
 };

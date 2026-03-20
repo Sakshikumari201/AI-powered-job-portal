@@ -36,10 +36,10 @@ app.use('/api/interview', require('./routes/interviewRoutes'));
 const path = require('path');
 
 // Serve frontend
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && !process.env.NETLIFY) {
   app.use(express.static(path.join(__dirname, '../client/dist')));
 
-  app.get('*', (req, res) =>
+  app.use((req, res) =>
     res.sendFile(path.resolve(__dirname, '../', 'client', 'dist', 'index.html'))
   );
 } else {
@@ -52,11 +52,12 @@ if (process.env.NODE_ENV === 'production') {
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+module.exports = app;
 
-app.listen(PORT, () => {
-  logger.info({ port: PORT, env: process.env.NODE_ENV }, `Server running on port ${PORT}`);
-
-  // Start background job pre-fetch cron worker
-  startJobCron();
-});
+if (process.env.NODE_ENV !== 'test' && !process.env.NETLIFY) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    logger.info({ port: PORT, env: process.env.NODE_ENV }, `Server running on port ${PORT}`);
+    startJobCron();
+  });
+}

@@ -1,0 +1,277 @@
+import React, { useEffect, useRef } from 'react';
+
+/* ─── tunables ─────────────────────────────────────────────────────────── */
+const NODE_COUNT   = 42;
+const MAX_EDGE_LEN = 160;   // px – max distance to draw an edge
+const NODE_SPEED   = 0.28;  // base drift speed
+const PULSE_SPEED  = 1.8;   // how fast pulses travel along edges
+const PULSE_EVERY  = 55;    // frames between new pulses
+const MOUSE_RADIUS = 180;   // px – mouse attraction radius
+const MOUSE_FORCE  = 0.012; // attraction strength
+
+/* brand palette (light / dark) */
+const PALETTE = {
+  light: {
+    nodeA: [59, 130, 246],   // blue-500
+    nodeB: [139, 92, 246],   // violet-500
+    nodeC: [16, 185, 129],   // emerald-500
+    edge:  [99, 102, 241],   // indigo-500
+    pulse: [255, 255, 255],
+    orbs: [
+      { c: [59, 130, 246],  a: 0.07 },
+      { c: [139, 92, 246],  a: 0.06 },
+      { c: [16, 185, 129],  a: 0.04 },
+    ],
+  },
+  dark: {
+    nodeA: [99, 179, 255],   // blue lighter
+    nodeB: [192, 132, 252],  // violet lighter
+    nodeC: [52, 211, 153],   // emerald lighter
+    edge:  [139, 92, 246],
+    pulse: [255, 255, 255],
+    orbs: [
+      { c: [99, 102, 241],  a: 0.12 },
+      { c: [139, 92, 246],  a: 0.10 },
+      { c: [16, 185, 129],  a: 0.07 },
+    ],
+  },
+};
+
+function rng(a, b) { return a + Math.random() * (b - a); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+/* ─── Component ────────────────────────────────────────────────────────── */
+const CanvasBackground = () => {
+  const canvasRef  = useRef(null);
+  const stateRef   = useRef({});   // mutable runtime state (no re-renders)
+  const rafRef     = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx    = canvas.getContext('2d');
+    const S      = stateRef.current;
+
+    /* ── sizing ─────────────────────────────────────────── */
+    function resize() {
+      canvas.width  = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    /* ── mouse tracking ─────────────────────────────────── */
+    S.mouse = { x: -9999, y: -9999 };
+    function onMove(e) {
+      const r = canvas.getBoundingClientRect();
+      S.mouse.x = e.clientX - r.left;
+      S.mouse.y = e.clientY - r.top;
+    }
+    function onLeave() { S.mouse.x = S.mouse.y = -9999; }
+    canvas.parentElement.addEventListener('mousemove', onMove);
+    canvas.parentElement.addEventListener('mouseleave', onLeave);
+
+    /* ── build nodes ────────────────────────────────────── */
+    const nodeColors = ['nodeA', 'nodeB', 'nodeC'];
+    S.nodes = Array.from({ length: NODE_COUNT }, (_, i) => ({
+      x  : rng(0, canvas.width),
+      y  : rng(0, canvas.height),
+      vx : rng(-NODE_SPEED, NODE_SPEED),
+      vy : rng(-NODE_SPEED, NODE_SPEED),
+      r  : rng(2.5, 5.5),
+      colorKey: nodeColors[i % 3],
+      phase: rng(0, Math.PI * 2),   // for individual glow pulsing
+    }));
+
+    /* ── edge cache ─────────────────────────────────────── */
+    S.edges   = [];
+    S.pulses  = [];
+    S.frame   = 0;
+
+    /* ── main loop ──────────────────────────────────────── */
+    function draw() {
+      S.frame++;
+      const W   = canvas.width;
+      const H   = canvas.height;
+      const now = Date.now();
+      const t   = now / 1000;
+      const dark = document.documentElement.classList.contains('dark');
+      const pal  = dark ? PALETTE.dark : PALETTE.light;
+
+      ctx.clearRect(0, 0, W, H);
+
+      /* ── 1. ambient gradient orbs ─────────────────────── */
+      const orbDefs = [
+        { fx: 0.12, fy: 0.18, rx: 260, ry: 200 },
+        { fx: 0.88, fy: 0.80, rx: 300, ry: 230 },
+        { fx: 0.50, fy: 0.55, rx: 200, ry: 160 },
+      ];
+      orbDefs.forEach(({ fx, fy, rx, ry }, i) => {
+        const ox = Math.sin(t * 0.35 + i * 1.7) * 40;
+        const oy = Math.cos(t * 0.28 + i * 1.1) * 28;
+        const cx = W * fx + ox;
+        const cy = H * fy + oy;
+        const { c, a } = pal.orbs[i];
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
+        g.addColorStop(0, `rgba(${c},${a})`);
+        g.addColorStop(1, `rgba(${c},0)`);
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+      });
+
+      /* ── 2. update nodes (drift + mouse attract) ────────── */
+      const nodes = S.nodes;
+      nodes.forEach(n => {
+        // mouse attraction
+        const mdx = S.mouse.x - n.x;
+        const mdy = S.mouse.y - n.y;
+        const mdist = Math.hypot(mdx, mdy);
+        if (mdist < MOUSE_RADIUS && mdist > 1) {
+          n.vx += (mdx / mdist) * MOUSE_FORCE;
+          n.vy += (mdy / mdist) * MOUSE_FORCE;
+        }
+
+        // speed cap
+        const spd = Math.hypot(n.vx, n.vy);
+        if (spd > NODE_SPEED * 2.5) {
+          n.vx = (n.vx / spd) * NODE_SPEED * 2.5;
+          n.vy = (n.vy / spd) * NODE_SPEED * 2.5;
+        }
+
+        n.x += n.vx;
+        n.y += n.vy;
+
+        // wrap edges (instead of bounce — feels smoother for AI viz)
+        if (n.x < -20)      n.x = W + 20;
+        if (n.x > W + 20)   n.x = -20;
+        if (n.y < -20)      n.y = H + 20;
+        if (n.y > H + 20)   n.y = -20;
+      });
+
+      /* ── 3. build edge list this frame ─────────────────── */
+      S.edges = [];
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx   = nodes[j].x - nodes[i].x;
+          const dy   = nodes[j].y - nodes[i].y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < MAX_EDGE_LEN) {
+            S.edges.push({ i, j, dist, dx, dy });
+          }
+        }
+      }
+
+      /* ── 4. new pulse every N frames ───────────────────── */
+      if (S.frame % PULSE_EVERY === 0 && S.edges.length) {
+        const e = S.edges[Math.floor(Math.random() * S.edges.length)];
+        // random direction along edge
+        const fwd = Math.random() > 0.5;
+        S.pulses.push({ from: fwd ? e.i : e.j, to: fwd ? e.j : e.i, t: 0 });
+      }
+
+      /* ── 5. draw edges ─────────────────────────────────── */
+      ctx.lineCap = 'round';
+      S.edges.forEach(({ i, j, dist }) => {
+        const fade = 1 - dist / MAX_EDGE_LEN;
+        const edgeA = dark ? fade * 0.28 : fade * 0.18;
+        const [er, eg, eb] = pal.edge;
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.strokeStyle = `rgba(${er},${eg},${eb},${edgeA})`;
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+      });
+
+      /* ── 6. draw & advance pulses ───────────────────────── */
+      S.pulses = S.pulses.filter(p => p.t <= 1);
+      S.pulses.forEach(p => {
+        const nFrom = nodes[p.from];
+        const nTo   = nodes[p.to];
+        // check still in edges this frame
+        const still = S.edges.some(
+          e => (e.i === p.from && e.j === p.to) ||
+               (e.i === p.to   && e.j === p.from)
+        );
+        if (!still) { p.t = 2; return; }  // discard
+
+        const px = lerp(nFrom.x, nTo.x, p.t);
+        const py = lerp(nFrom.y, nTo.y, p.t);
+
+        // glowing dot
+        const gPulse = ctx.createRadialGradient(px, py, 0, px, py, 8);
+        gPulse.addColorStop(0, `rgba(255,255,255,${dark ? 0.95 : 0.85})`);
+        gPulse.addColorStop(0.4, `rgba(${pal.edge},0.5)`);
+        gPulse.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.beginPath();
+        ctx.arc(px, py, 8, 0, Math.PI * 2);
+        ctx.fillStyle = gPulse;
+        ctx.fill();
+
+        // tiny bright core
+        ctx.beginPath();
+        ctx.arc(px, py, 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${dark ? 1 : 0.95})`;
+        ctx.fill();
+
+        p.t += PULSE_SPEED / 60 / (Math.hypot(nTo.x - nFrom.x, nTo.y - nFrom.y) / 100);
+      });
+
+      /* ── 7. draw nodes ─────────────────────────────────── */
+      nodes.forEach(n => {
+        const pulse = 0.6 + 0.4 * Math.sin(t * 1.8 + n.phase);
+        const [r, g, b] = pal[n.colorKey];
+
+        // outer glow
+        const glowR = n.r * 4.5 * pulse;
+        const glow  = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
+        glow.addColorStop(0, `rgba(${r},${g},${b},${dark ? 0.35 : 0.2})`);
+        glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+
+        // core node
+        const nodeGrad = ctx.createRadialGradient(
+          n.x - n.r * 0.3, n.y - n.r * 0.3, 0,
+          n.x, n.y, n.r
+        );
+        nodeGrad.addColorStop(0, `rgba(255,255,255,${dark ? 0.9 : 0.8})`);
+        nodeGrad.addColorStop(1, `rgba(${r},${g},${b},${dark ? 0.95 : 0.85})`);
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r * pulse * 0.85 + n.r * 0.15, 0, Math.PI * 2);
+        ctx.fillStyle = nodeGrad;
+        ctx.fill();
+      });
+
+      rafRef.current = requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('resize', resize);
+      canvas.parentElement?.removeEventListener('mousemove', onMove);
+      canvas.parentElement?.removeEventListener('mouseleave', onLeave);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}
+    />
+  );
+};
+
+export default CanvasBackground;
