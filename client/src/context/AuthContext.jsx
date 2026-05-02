@@ -11,11 +11,16 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loggedInUser = localStorage.getItem('user');
-    if (loggedInUser) {
-      setUser(JSON.parse(loggedInUser));
+    try {
+      const loggedInUser = localStorage.getItem('user');
+      if (loggedInUser) {
+        setUser(JSON.parse(loggedInUser));
+      }
+    } catch (err) {
+      console.error('Failed to parse user', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   // Clear any global (non-user-specific) stale analysis data
@@ -76,7 +81,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ user, login, register, googleLogin, logout, loading, saveAnalysis, loadAnalysis }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

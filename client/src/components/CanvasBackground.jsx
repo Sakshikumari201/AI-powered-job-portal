@@ -59,6 +59,9 @@ const CanvasBackground = () => {
     window.addEventListener('resize', resize);
 
     // Keep track of mouse position for interactivity
+    // Initialize state
+    S.frame = 0;
+    S.pulses = [];
     S.mouse = { x: -9999, y: -9999 };
     function onMove(e) {
       const r = canvas.getBoundingClientRect();
@@ -235,7 +238,9 @@ const CanvasBackground = () => {
       rafRef.current = requestAnimationFrame(draw);
     }
 
-    draw();
+    if (canvas && canvas.parentElement) {
+      draw();
+    }
 
     return () => {
       cancelAnimationFrame(rafRef.current);
