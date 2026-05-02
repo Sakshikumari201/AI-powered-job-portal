@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import api from '../api/axios';
+import httpClient from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
 import ScoreRing from '../components/ScoreRing';
 import PageWrapper from '../components/PageWrapper';
@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import MockInterviewModal from '../components/MockInterviewModal';
 
-const getFitLabel = (score) => {
+// Helper to determine the fit level based on the match percentage
+const determineFitLevel = (score) => {
   if (score >= 75) return 'High Fit';
   if (score >= 50) return 'Moderate Fit';
   if (score >= 30) return 'Low Fit';
@@ -43,7 +44,7 @@ const JobMatches = () => {
         resumeData: cached.skills || cached.extractedData || cached,
         jobData: job
       };
-      const res = await api.post('/cover-letter/generate', payload);
+      const res = await httpClient.post('/cover-letter/generate', payload);
       setCoverLetterContent(res.data.data);
     } catch (err) {
       setCoverLetterContent('Failed to generate cover letter. ' + (err.response?.data?.message || err.message));
@@ -53,14 +54,18 @@ const JobMatches = () => {
   };
 
   useEffect(() => {
-    const fetchJobs = async () => {
+    // Inner function to load recommendations
+    const getRecommendations = async () => {
       try {
         const cached = loadAnalysis();
+        // If we already have jobs from the upload step, use them first
         if (Array.isArray(cached?.recommendedJobs)) {
           setJobs(cached.recommendedJobs);
           return;
         }
-        const res = await api.get('/jobs/recommendations');
+        
+        // Otherwise fetch fresh ones from the backend
+        const res = await httpClient.get('/jobs/recommendations');
         setJobs(res.data);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch job recommendations.');
@@ -68,7 +73,8 @@ const JobMatches = () => {
         setLoading(false);
       }
     };
-    fetchJobs();
+    
+    getRecommendations();
   }, []);
 
   if (loading) {
@@ -197,7 +203,7 @@ const JobMatches = () => {
                     score={Math.round(matchScore)}
                     size={100}
                     strokeWidth={7}
-                    sublabel={getFitLabel(matchScore)}
+                    sublabel={determineFitLevel(matchScore)}
                   />
                   <a
                     href={job.redirect_url || job.url || '#'}

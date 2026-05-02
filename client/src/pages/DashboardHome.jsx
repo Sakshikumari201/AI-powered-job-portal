@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import AnimatedCounter from '../components/AnimatedCounter';
 import ScoreRing from '../components/ScoreRing';
 import PageWrapper from '../components/PageWrapper';
-import api from '../api/axios';
+import httpClient from '../api/axios';
 import {
   FileText, Target, Briefcase, TrendingUp,
   ArrowRight, Sparkles, Shield, BarChart3,
@@ -17,23 +17,28 @@ const DashboardHome = () => {
   const [latestAnalysis, setLatestAnalysis] = useState(null);
 
   useEffect(() => {
-    // Load user-specific cached analysis
+    // Load user-specific cached analysis from the previous session
     const cached = loadAnalysis();
     if (cached) {
       setLatestAnalysis(cached);
     }
-    // Fetch profile for history
-    api.get('/users/profile').then(res => setProfile(res.data)).catch(() => { });
+    
+    // Fetch the latest profile data to get the history trend
+    httpClient.get('/users/profile')
+      .then(res => setProfile(res.data))
+      .catch(err => {
+        console.error('Failed to load profile history', err);
+      });
   }, [user]);
 
-  const hasAnalysis = !!latestAnalysis?.atsScore;
+  const isReportReady = !!latestAnalysis?.atsScore;
   const atsScore = latestAnalysis?.atsScore?.overallScore || 0;
   const industryReadiness = latestAnalysis?.industryReadiness || 0;
   const jobMarketReadiness = latestAnalysis?.jobMarketReadiness || 0;
-  const skillCount = hasAnalysis ? (latestAnalysis?.extractedSkills?.length || 0) : '--';
-  const topJobScore = hasAnalysis ? (latestAnalysis?.recommendedJobs?.[0]?.matchScore || 0) : '--';
-  const missingSkills = hasAnalysis ? (latestAnalysis?.skillGap?.missing || []) : [];
-  const missingCount = hasAnalysis ? missingSkills.length : '--';
+  const skillCount = isReportReady ? (latestAnalysis?.extractedSkills?.length || 0) : '--';
+  const topJobScore = isReportReady ? (latestAnalysis?.recommendedJobs?.[0]?.matchScore || 0) : '--';
+  const missingSkills = isReportReady ? (latestAnalysis?.skillGap?.missing || []) : [];
+  const missingCount = isReportReady ? missingSkills.length : '--';
   const history = profile?.analysisHistory || [];
 
   return (
@@ -45,7 +50,7 @@ const DashboardHome = () => {
             Welcome back, {user?.name?.split(' ')[0] || 'there'} 👋
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {hasAnalysis ? 'Here\'s your latest resume analysis at a glance.' : 'Upload a resume to get started with AI-powered analysis.'}
+            {isReportReady ? 'Here\'s your latest resume analysis at a glance.' : 'Upload a resume to get started with AI-powered analysis.'}
           </p>
         </div>
         <Link
@@ -71,7 +76,7 @@ const DashboardHome = () => {
               <ArrowRight size={16} className="text-gray-300 group-hover:text-primary-500 transition-colors" />
             </div>
             <div className="flex items-end gap-2">
-              {hasAnalysis ? (
+              {isReportReady ? (
                 <AnimatedCounter target={atsScore} className="text-4xl font-bold text-gray-900 dark:text-white" />
               ) : (
                 <span className="text-4xl font-bold text-gray-900 dark:text-white">--</span>
@@ -95,7 +100,7 @@ const DashboardHome = () => {
               <ArrowRight size={16} className="text-gray-300 group-hover:text-primary-500 transition-colors" />
             </div>
             <div className="flex items-end gap-2">
-              {hasAnalysis ? (
+              {isReportReady ? (
                 <AnimatedCounter target={industryReadiness} className="text-4xl font-bold text-gray-900 dark:text-white" suffix="%" />
               ) : (
                 <span className="text-4xl font-bold text-gray-900 dark:text-white">--</span>
@@ -118,7 +123,7 @@ const DashboardHome = () => {
               <ArrowRight size={16} className="text-gray-300 group-hover:text-primary-500 transition-colors" />
             </div>
             <div className="flex items-end gap-2">
-              {hasAnalysis ? (
+              {isReportReady ? (
                 <AnimatedCounter target={jobMarketReadiness} className="text-4xl font-bold text-gray-900 dark:text-white" suffix="%" />
               ) : (
                 <span className="text-4xl font-bold text-gray-900 dark:text-white">--</span>
@@ -148,7 +153,7 @@ const DashboardHome = () => {
                   <Briefcase size={16} className="text-blue-500" />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Best Job Match</span>
                 </div>
-                <span className="text-sm font-bold text-gray-900 dark:text-white">{hasAnalysis ? `${Math.round(topJobScore)}%` : '--'}</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">{isReportReady ? `${Math.round(topJobScore)}%` : '--'}</span>
               </div>
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
                 <div className="flex items-center gap-3">
@@ -169,7 +174,7 @@ const DashboardHome = () => {
 
           {/* Analysis History Trend / Upload CTA */}
           <div className="lg:col-span-3 bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-dark-border animate-fade-in-up stagger-4 relative overflow-hidden">
-            {!hasAnalysis && (
+            {!isReportReady && (
               <div className="absolute inset-0 bg-white/80 dark:bg-dark-card/90 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-6 text-center">
                 <div className="w-16 h-16 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-4">
                   <Sparkles className="w-8 h-8 text-primary-500" />

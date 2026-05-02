@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import api from '../api/axios';
+import httpClient from '../api/axios';
 
 export const AuthContext = createContext();
 
@@ -30,19 +30,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    const res = await api.post('/users/login', { email, password });
+    const res = await httpClient.post('/users/login', { email, password });
     setAuthUser(res.data);
     return res.data;
   };
 
   const register = async (name, email, password, industry) => {
-    const res = await api.post('/users/register', { name, email, password, industry });
+    const res = await httpClient.post('/users/register', { name, email, password, industry });
     setAuthUser(res.data);
     return res.data;
   };
 
   const googleLogin = async (credential) => {
-    const res = await api.post('/users/google', { credential });
+    const res = await httpClient.post('/users/google', { credential });
     setAuthUser(res.data);
     return res.data;
   };

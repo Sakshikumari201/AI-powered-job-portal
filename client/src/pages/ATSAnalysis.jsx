@@ -3,7 +3,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip,
 } from 'recharts';
-import api from '../api/axios';
+import httpClient from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
 import ScoreRing from '../components/ScoreRing';
 import AnimatedCounter from '../components/AnimatedCounter';
@@ -14,15 +14,15 @@ import {
   Zap, Shield, Award, Target, ArrowRight, Lightbulb,
 } from 'lucide-react';
 
-/* ─── Score color helper ──────────────────────────────────────────────────── */
-const heatColor = (score, max) => {
+// Helper to style scores based on their value
+const getScoreStyle = (score, max) => {
   const pct = max > 0 ? (score / max) * 100 : 0;
   if (pct >= 80) return { bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600', bar: 'bg-emerald-500', icon: '🟢', label: 'Strong' };
   if (pct >= 50) return { bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'text-yellow-600', bar: 'bg-yellow-500', icon: '🟡', label: 'Needs Work' };
   return { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600', bar: 'bg-red-500', icon: '🔴', label: 'Weak' };
 };
 
-const maxWeights = { skills: 35, keywords: 20, experience: 20, education: 10, structure: 10, grammar: 5 };
+const sectionWeights = { skills: 35, keywords: 20, experience: 20, education: 10, structure: 10, grammar: 5 };
 
 /* ─── Improvement suggestions map ─────────────────────────────────────────── */
 const skillSuggestions = {
@@ -51,7 +51,8 @@ const ATSAnalysis = () => {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
-    const fetchAnalysis = async () => {
+    // Fetch analysis data from cache or API
+    const loadReportData = async () => {
       try {
         const cached = loadAnalysis();
         if (cached?.atsScore) {
@@ -68,19 +69,21 @@ const ATSAnalysis = () => {
             skillGap: cached.skillGap || null,
             performance: cached.performance || null,
           });
-          setTimeout(() => setRevealed(true), 100);
+          // Small delay before revealing to trigger animations
+          setTimeout(() => setRevealed(true), 150);
           return;
         }
-        const res = await api.get('/resumes/analysis');
+        
+        const res = await httpClient.get('/resumes/analysis');
         setData(res.data);
-        setTimeout(() => setRevealed(true), 100);
+        setTimeout(() => setRevealed(true), 150);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch analysis');
       } finally {
         setLoading(false);
       }
     };
-    fetchAnalysis();
+    loadReportData();
   }, []);
 
   /* ─── Radar data ──────────────────────────────────────────────────────── */
@@ -88,7 +91,7 @@ const ATSAnalysis = () => {
     if (!data?.atsScore?.breakdown) return [];
     return Object.entries(data.atsScore.breakdown).map(([key, value]) => ({
       subject: key.charAt(0).toUpperCase() + key.slice(1),
-      score: Math.round((value / maxWeights[key]) * 100),
+      score: Math.round((value / sectionWeights[key]) * 100),
       fullMark: 100,
     }));
   }, [data]);
@@ -214,9 +217,9 @@ const ATSAnalysis = () => {
           <p className="text-xs text-gray-400 mb-5">Section-by-section resume strength</p>
           <div className="space-y-4">
             {Object.entries(atsScore.breakdown).map(([key, value], idx) => {
-              const max = maxWeights[key];
+              const max = sectionWeights[key];
               const pct = Math.round((value / max) * 100);
-              const color = heatColor(value, max);
+              const color = getScoreStyle(value, max);
               return (
                 <div key={key} className={`animate-fade-in-up`} style={{ animationDelay: `${idx * 0.08}s` }}>
                   <div className="flex items-center justify-between mb-1.5">

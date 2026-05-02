@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api/axios';
+import httpClient from '../api/axios';
 import PageWrapper from '../components/PageWrapper';
 import { Plus, Trash2, ExternalLink, Briefcase } from 'lucide-react';
 
-const COLUMNS = ['Saved', 'Applied', 'Interviewing', 'Offers', 'Rejected'];
+// The different status categories for the job board
+const trackerColumns = ['Saved', 'Applied', 'Interviewing', 'Offers', 'Rejected'];
 
 const JobTracker = () => {
   const [applications, setApplications] = useState([]);
@@ -15,15 +16,16 @@ const JobTracker = () => {
   const [dragOverColumn, setDragOverColumn] = useState(null);
 
   useEffect(() => {
-    fetchApplications();
+    loadJobs();
   }, []);
 
-  const fetchApplications = async () => {
+  // Fetch all saved job applications for the current user
+  const loadJobs = async () => {
     try {
-      const res = await api.get('/applications');
+      const res = await httpClient.get('/applications');
       setApplications(res.data);
     } catch (err) {
-      setError('Failed to fetch applications.');
+      setError('Oops! Failed to load your applications.');
     } finally {
       setLoading(false);
     }
@@ -32,21 +34,24 @@ const JobTracker = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post('/applications', formData);
+      const res = await httpClient.post('/applications', formData);
       setApplications([res.data, ...applications]);
       setShowForm(false);
+      // Reset the form
       setFormData({ company: '', title: '', url: '', status: 'Saved' });
     } catch (err) {
-      alert('Error creating application');
+      console.error('Create error:', err);
+      alert('Something went wrong while saving the job.');
     }
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this?')) return;
     try {
-      await api.delete(`/applications/${id}`);
+      await httpClient.delete(`/applications/${id}`);
       setApplications(applications.filter(app => app._id !== id));
     } catch (err) {
-      alert('Error deleting application');
+      alert('Delete failed. Try again.');
     }
   };
 
@@ -61,10 +66,11 @@ const JobTracker = () => {
     ));
 
     try {
-      await api.put(`/applications/${appId}`, { status: newStatus });
+      await httpClient.put(`/applications/${appId}`, { status: newStatus });
     } catch (err) {
-      setApplications(previous); // Revert
-      alert('Error changing status');
+      // Revert the UI if the backend request fails
+      setApplications(previous);
+      alert('Failed to update status on the server.');
     }
   };
 
@@ -104,7 +110,7 @@ const JobTracker = () => {
           <div className="flex-1 min-w-[150px]">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
             <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-dark-border bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-medium">
-              {COLUMNS.map(c => <option key={c} value={c}>{c}</option>)}
+              {trackerColumns.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <button type="submit" className="px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold rounded-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-transform duration-200 hover:scale-[1.03] active:scale-95 shadow-md">
@@ -115,9 +121,8 @@ const JobTracker = () => {
 
       {error && <div className="text-red-500 text-center font-medium">{error}</div>}
 
-      {/* Board */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto pb-4">
-        {COLUMNS.map(column => {
+        {trackerColumns.map(column => {
           const columnApps = applications.filter(a => a.status === column);
           return (
             <div

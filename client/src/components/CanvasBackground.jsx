@@ -1,13 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 
-/* ─── tunables ─────────────────────────────────────────────────────────── */
-const NODE_COUNT   = 42;
-const MAX_EDGE_LEN = 160;   // px – max distance to draw an edge
-const NODE_SPEED   = 0.28;  // base drift speed
-const PULSE_SPEED  = 1.8;   // how fast pulses travel along edges
-const PULSE_EVERY  = 55;    // frames between new pulses
-const MOUSE_RADIUS = 180;   // px – mouse attraction radius
-const MOUSE_FORCE  = 0.012; // attraction strength
+// Configuration for the particle background effect
+const maxPoints = 50;  // Number of nodes in the network
+const edgeRange = 160;  // Max distance to draw a line between nodes
+const driftSpeed = 0.3; // How fast they move on their own
+const pulseFrequency = 55; // Frames between each "data pulse"
+const touchRadius = 180; // Distance for mouse attraction
+const touchPull = 0.015; // How strongly the mouse pulls nodes
 
 /* brand palette (light / dark) */
 const PALETTE = {
@@ -37,10 +36,10 @@ const PALETTE = {
   },
 };
 
-function rng(a, b) { return a + Math.random() * (b - a); }
+function getRandom(a, b) { return a + Math.random() * (b - a); }
 function lerp(a, b, t) { return a + (b - a) * t; }
 
-/* ─── Component ────────────────────────────────────────────────────────── */
+// Main canvas component for the background animation
 const CanvasBackground = () => {
   const canvasRef  = useRef(null);
   const stateRef   = useRef({});   // mutable runtime state (no re-renders)
@@ -51,7 +50,7 @@ const CanvasBackground = () => {
     const ctx    = canvas.getContext('2d');
     const S      = stateRef.current;
 
-    /* ── sizing ─────────────────────────────────────────── */
+    // Handle window resizing
     function resize() {
       canvas.width  = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
@@ -59,7 +58,7 @@ const CanvasBackground = () => {
     resize();
     window.addEventListener('resize', resize);
 
-    /* ── mouse tracking ─────────────────────────────────── */
+    // Keep track of mouse position for interactivity
     S.mouse = { x: -9999, y: -9999 };
     function onMove(e) {
       const r = canvas.getBoundingClientRect();
@@ -70,24 +69,19 @@ const CanvasBackground = () => {
     canvas.parentElement.addEventListener('mousemove', onMove);
     canvas.parentElement.addEventListener('mouseleave', onLeave);
 
-    /* ── build nodes ────────────────────────────────────── */
+    // Initialize nodes with random positions and velocities
     const nodeColors = ['nodeA', 'nodeB', 'nodeC'];
-    S.nodes = Array.from({ length: NODE_COUNT }, (_, i) => ({
-      x  : rng(0, canvas.width),
-      y  : rng(0, canvas.height),
-      vx : rng(-NODE_SPEED, NODE_SPEED),
-      vy : rng(-NODE_SPEED, NODE_SPEED),
-      r  : rng(2.5, 5.5),
+    S.nodes = Array.from({ length: maxPoints }, (_, i) => ({
+      x  : getRandom(0, canvas.width),
+      y  : getRandom(0, canvas.height),
+      vx : getRandom(-driftSpeed, driftSpeed),
+      vy : getRandom(-driftSpeed, driftSpeed),
+      r  : getRandom(2.5, 5.5),
       colorKey: nodeColors[i % 3],
-      phase: rng(0, Math.PI * 2),   // for individual glow pulsing
+      phase: getRandom(0, Math.PI * 2),
     }));
 
-    /* ── edge cache ─────────────────────────────────────── */
-    S.edges   = [];
-    S.pulses  = [];
-    S.frame   = 0;
-
-    /* ── main loop ──────────────────────────────────────── */
+    // Animation loop
     function draw() {
       S.frame++;
       const W   = canvas.width;
@@ -99,7 +93,7 @@ const CanvasBackground = () => {
 
       ctx.clearRect(0, 0, W, H);
 
-      /* ── 1. ambient gradient orbs ─────────────────────── */
+      // Draw some subtle ambient glows in the background
       const orbDefs = [
         { fx: 0.12, fy: 0.18, rx: 260, ry: 200 },
         { fx: 0.88, fy: 0.80, rx: 300, ry: 230 },
@@ -120,23 +114,21 @@ const CanvasBackground = () => {
         ctx.fill();
       });
 
-      /* ── 2. update nodes (drift + mouse attract) ────────── */
+      // Update node positions and handle interactivity
       const nodes = S.nodes;
       nodes.forEach(n => {
-        // mouse attraction
         const mdx = S.mouse.x - n.x;
         const mdy = S.mouse.y - n.y;
         const mdist = Math.hypot(mdx, mdy);
-        if (mdist < MOUSE_RADIUS && mdist > 1) {
-          n.vx += (mdx / mdist) * MOUSE_FORCE;
-          n.vy += (mdy / mdist) * MOUSE_FORCE;
+        if (mdist < touchRadius && mdist > 1) {
+          n.vx += (mdx / mdist) * touchPull;
+          n.vy += (mdy / mdist) * touchPull;
         }
 
-        // speed cap
         const spd = Math.hypot(n.vx, n.vy);
-        if (spd > NODE_SPEED * 2.5) {
-          n.vx = (n.vx / spd) * NODE_SPEED * 2.5;
-          n.vy = (n.vy / spd) * NODE_SPEED * 2.5;
+        if (spd > driftSpeed * 2.5) {
+          n.vx = (n.vx / spd) * driftSpeed * 2.5;
+          n.vy = (n.vy / spd) * driftSpeed * 2.5;
         }
 
         n.x += n.vx;
@@ -149,31 +141,30 @@ const CanvasBackground = () => {
         if (n.y > H + 20)   n.y = -20;
       });
 
-      /* ── 3. build edge list this frame ─────────────────── */
+      // Rebuild the edge list based on proximity
       S.edges = [];
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx   = nodes[j].x - nodes[i].x;
           const dy   = nodes[j].y - nodes[i].y;
           const dist = Math.hypot(dx, dy);
-          if (dist < MAX_EDGE_LEN) {
+          if (dist < edgeRange) {
             S.edges.push({ i, j, dist, dx, dy });
           }
         }
       }
 
-      /* ── 4. new pulse every N frames ───────────────────── */
-      if (S.frame % PULSE_EVERY === 0 && S.edges.length) {
+      // Trigger new pulses occasionally
+      if (S.frame % pulseFrequency === 0 && S.edges.length) {
         const e = S.edges[Math.floor(Math.random() * S.edges.length)];
-        // random direction along edge
         const fwd = Math.random() > 0.5;
         S.pulses.push({ from: fwd ? e.i : e.j, to: fwd ? e.j : e.i, t: 0 });
       }
 
-      /* ── 5. draw edges ─────────────────────────────────── */
+      // Draw lines between nodes
       ctx.lineCap = 'round';
       S.edges.forEach(({ i, j, dist }) => {
-        const fade = 1 - dist / MAX_EDGE_LEN;
+        const fade = 1 - dist / edgeRange;
         const edgeA = dark ? fade * 0.28 : fade * 0.18;
         const [er, eg, eb] = pal.edge;
         ctx.beginPath();
@@ -184,22 +175,20 @@ const CanvasBackground = () => {
         ctx.stroke();
       });
 
-      /* ── 6. draw & advance pulses ───────────────────────── */
+      // Draw and move pulses along the edges
       S.pulses = S.pulses.filter(p => p.t <= 1);
       S.pulses.forEach(p => {
         const nFrom = nodes[p.from];
         const nTo   = nodes[p.to];
-        // check still in edges this frame
         const still = S.edges.some(
           e => (e.i === p.from && e.j === p.to) ||
                (e.i === p.to   && e.j === p.from)
         );
-        if (!still) { p.t = 2; return; }  // discard
+        if (!still) { p.t = 2; return; }
 
         const px = lerp(nFrom.x, nTo.x, p.t);
         const py = lerp(nFrom.y, nTo.y, p.t);
 
-        // glowing dot
         const gPulse = ctx.createRadialGradient(px, py, 0, px, py, 8);
         gPulse.addColorStop(0, `rgba(255,255,255,${dark ? 0.95 : 0.85})`);
         gPulse.addColorStop(0.4, `rgba(${pal.edge},0.5)`);
@@ -209,21 +198,19 @@ const CanvasBackground = () => {
         ctx.fillStyle = gPulse;
         ctx.fill();
 
-        // tiny bright core
         ctx.beginPath();
         ctx.arc(px, py, 2, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255,255,255,${dark ? 1 : 0.95})`;
         ctx.fill();
 
-        p.t += PULSE_SPEED / 60 / (Math.hypot(nTo.x - nFrom.x, nTo.y - nFrom.y) / 100);
+        p.t += 1.8 / 60 / (Math.hypot(nTo.x - nFrom.x, nTo.y - nFrom.y) / 100);
       });
 
-      /* ── 7. draw nodes ─────────────────────────────────── */
+      // Draw the nodes themselves
       nodes.forEach(n => {
         const pulse = 0.6 + 0.4 * Math.sin(t * 1.8 + n.phase);
         const [r, g, b] = pal[n.colorKey];
 
-        // outer glow
         const glowR = n.r * 4.5 * pulse;
         const glow  = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
         glow.addColorStop(0, `rgba(${r},${g},${b},${dark ? 0.35 : 0.2})`);
@@ -233,7 +220,6 @@ const CanvasBackground = () => {
         ctx.fillStyle = glow;
         ctx.fill();
 
-        // core node
         const nodeGrad = ctx.createRadialGradient(
           n.x - n.r * 0.3, n.y - n.r * 0.3, 0,
           n.x, n.y, n.r

@@ -2,7 +2,7 @@ const axios = require('axios');
 const Job = require('../models/Job');
 const { extractEntities } = require('./parsingService'); // Reusing NLP logic to extract skills
 const { buildTfIdfVector } = require('./matchingService');
-const { metricsStore } = require('../middleware/metricsMiddleware');
+const { appStats } = require('../middleware/metricsMiddleware');
 const logger = require('../config/logger');
 
 /**
@@ -76,13 +76,13 @@ const fetchAndCacheJobs = async (keyword, location = 'us', page = 1) => {
 
     // If we have enough cached jobs globally for this keyword, just return the db call instead of hitting API
     if (cachedJobsCount >= 10 && page === 1) {
-      metricsStore.cacheHits++;
+      appStats.cacheHits++;
       logger.info({ keyword, cachedJobsCount }, 'Cache hit for keyword; using DB jobs');
       // We don't return them here, the controller will run the matching engine against ALL db jobs.
       return true;
     }
 
-    metricsStore.cacheMisses++;
+    appStats.cacheMisses++;
     logger.info({ keyword, page }, 'Fetching from Adzuna API');
     const response = await axios.get(url);
     const results = response.data.results;

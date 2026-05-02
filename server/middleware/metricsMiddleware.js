@@ -1,101 +1,113 @@
 const logger = require('../config/logger');
 
-const metricsStore = {
+/**
+ * Simple in-memory store for tracking app performance.
+ * TODO: Move this to Redis or a database if we scale to multiple instances.
+ */
+const appStats = {
   cacheHits: 0,
   cacheMisses: 0,
   requestCounts: new Map(),
   responseTimes: [],
-  // ── Analyze-specific metrics ──────────────────────────────────────────
+  // Tracking resume analysis specifically
   totalAnalyzes: 0,
   analyzeTimes: [],
   serverStartedAt: new Date(),
 };
 
+// Helper to log the current state of metrics
 const logMetrics = () => {
-  const totalRequests = Array.from(metricsStore.requestCounts.values()).reduce((a, b) => a + b, 0);
-  const cacheTotal = metricsStore.cacheHits + metricsStore.cacheMisses;
+  const totalRequests = Array.from(appStats.requestCounts.values()).reduce((a, b) => a + b, 0);
+  const cacheTotal = appStats.cacheHits + appStats.cacheMisses;
   const cacheHitRate = cacheTotal > 0
-    ? (metricsStore.cacheHits / cacheTotal * 100).toFixed(2)
+    ? (appStats.cacheHits / cacheTotal * 100).toFixed(2)
     : '0.00';
-  const avgResponseTime = metricsStore.responseTimes.length > 0
-    ? (metricsStore.responseTimes.reduce((a, b) => a + b, 0) / metricsStore.responseTimes.length).toFixed(2)
+  const avgResponseTime = appStats.responseTimes.length > 0
+    ? (appStats.responseTimes.reduce((a, b) => a + b, 0) / appStats.responseTimes.length).toFixed(2)
     : '0.00';
-  const avgAnalyzeTime = metricsStore.analyzeTimes.length > 0
-    ? (metricsStore.analyzeTimes.reduce((a, b) => a + b, 0) / metricsStore.analyzeTimes.length).toFixed(2)
+  const avgAnalyzeTime = appStats.analyzeTimes.length > 0
+    ? (appStats.analyzeTimes.reduce((a, b) => a + b, 0) / appStats.analyzeTimes.length).toFixed(2)
     : '0.00';
 
   logger.info({
-    cacheHits: metricsStore.cacheHits,
-    cacheMisses: metricsStore.cacheMisses,
+    cacheHits: appStats.cacheHits,
+    cacheMisses: appStats.cacheMisses,
     cacheHitRate: `${cacheHitRate}%`,
     totalRequests,
     avgResponseTime: `${avgResponseTime}ms`,
-    totalAnalyzes: metricsStore.totalAnalyzes,
+    totalAnalyzes: appStats.totalAnalyzes,
     avgAnalyzeTime: `${avgAnalyzeTime}ms`,
-    endpointCounts: Object.fromEntries(metricsStore.requestCounts)
+    endpointCounts: Object.fromEntries(appStats.requestCounts)
   }, 'Performance metrics snapshot');
 };
 
 /**
  * Returns a serializable snapshot of current metrics.
- * Used by the /api/system/metrics endpoint.
+ * Useful for the dashboard or health checks.
  */
 const getMetricsSnapshot = () => {
-  const cacheTotal = metricsStore.cacheHits + metricsStore.cacheMisses;
+  const cacheTotal = appStats.cacheHits + appStats.cacheMisses;
 
   return {
-    uptime: Math.round((Date.now() - metricsStore.serverStartedAt.getTime()) / 1000),
+    uptime: Math.round((Date.now() - appStats.serverStartedAt.getTime()) / 1000),
     cache: {
-      hits: metricsStore.cacheHits,
-      misses: metricsStore.cacheMisses,
+      hits: appStats.cacheHits,
+      misses: appStats.cacheMisses,
       hitRate: cacheTotal > 0
-        ? `${(metricsStore.cacheHits / cacheTotal * 100).toFixed(2)}%`
+        ? `${(appStats.cacheHits / cacheTotal * 100).toFixed(2)}%`
         : '0.00%',
     },
     analyze: {
-      totalResumesAnalyzed: metricsStore.totalAnalyzes,
-      avgAnalyzeTimeMs: metricsStore.analyzeTimes.length > 0
-        ? Math.round(metricsStore.analyzeTimes.reduce((a, b) => a + b, 0) / metricsStore.analyzeTimes.length)
+      totalResumesAnalyzed: appStats.totalAnalyzes,
+      avgAnalyzeTimeMs: appStats.analyzeTimes.length > 0
+        ? Math.round(appStats.analyzeTimes.reduce((a, b) => a + b, 0) / appStats.analyzeTimes.length)
         : 0,
-      lastAnalyzeTimeMs: metricsStore.analyzeTimes.length > 0
-        ? metricsStore.analyzeTimes[metricsStore.analyzeTimes.length - 1]
+      lastAnalyzeTimeMs: appStats.analyzeTimes.length > 0
+        ? appStats.analyzeTimes[appStats.analyzeTimes.length - 1]
         : 0,
       p95AnalyzeTimeMs: (() => {
-        if (metricsStore.analyzeTimes.length === 0) return 0;
-        const sorted = [...metricsStore.analyzeTimes].sort((a, b) => a - b);
+        if (appStats.analyzeTimes.length === 0) return 0;
+        const sorted = [...appStats.analyzeTimes].sort((a, b) => a - b);
         const idx = Math.floor(sorted.length * 0.95);
         return sorted[Math.min(idx, sorted.length - 1)];
       })(),
     },
     requests: {
-      totalRequests: Array.from(metricsStore.requestCounts.values()).reduce((a, b) => a + b, 0),
-      avgResponseTimeMs: metricsStore.responseTimes.length > 0
-        ? Math.round(metricsStore.responseTimes.reduce((a, b) => a + b, 0) / metricsStore.responseTimes.length)
+      totalRequests: Array.from(appStats.requestCounts.values()).reduce((a, b) => a + b, 0),
+      avgResponseTimeMs: appStats.responseTimes.length > 0
+        ? Math.round(appStats.responseTimes.reduce((a, b) => a + b, 0) / appStats.responseTimes.length)
         : 0,
-      endpointCounts: Object.fromEntries(metricsStore.requestCounts),
+      endpointCounts: Object.fromEntries(appStats.requestCounts),
     },
-    serverStartedAt: metricsStore.serverStartedAt.toISOString(),
+    serverStartedAt: appStats.serverStartedAt.toISOString(),
   };
 };
 
-// Log metrics every 5 minutes (aggregate window)
+// Log and reset rolling window metrics every 5 minutes
 setInterval(() => {
   logMetrics();
-  // Only reset rolling windows, keep cumulative counters
-  metricsStore.requestCounts.clear();
-  metricsStore.responseTimes = [];
+  appStats.requestCounts.clear();
+  appStats.responseTimes = [];
 }, 5 * 60 * 1000);
 
+// Middleware to record how long each request takes
 const recordResponseTime = (req, res, next) => {
-  const start = Date.now();
+  const startTime = Date.now();
   res.on('finish', () => {
-    const duration = Date.now() - start;
-    metricsStore.responseTimes.push(duration);
+    const duration = Date.now() - startTime;
+    appStats.responseTimes.push(duration);
     const route = req.route?.path || req.path;
-    metricsStore.requestCounts.set(route, (metricsStore.requestCounts.get(route) || 0) + 1);
-    logger.debug({ method: req.method, route, duration, statusCode: res.statusCode }, 'Request completed');
+    appStats.requestCounts.set(route, (appStats.requestCounts.get(route) || 0) + 1);
+    
+    // Debug log for every request
+    logger.debug({ 
+      method: req.method, 
+      route, 
+      duration, 
+      status: res.statusCode 
+    }, 'Request tracking');
   });
   next();
 };
 
-module.exports = { recordResponseTime, metricsStore, getMetricsSnapshot };
+module.exports = { recordResponseTime, appStats, getMetricsSnapshot };

@@ -6,12 +6,12 @@ import {
   Shield, Zap, BarChart3, Briefcase, Brain, Target,
   Cpu, Database, ArrowRight, Lock, Clock, Star,
 } from 'lucide-react';
-import api from '../api/axios';
+import httpClient from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
 import PageWrapper from '../components/PageWrapper';
 
-/* ─── Staged Loading Steps ────────────────────────────────────────────────── */
-const LOADING_STAGES = [
+// Steps for the analysis process - using specific icons and colors for each phase
+const analysisSteps = [
   { icon: FileText, label: 'Parsing Resume', desc: 'Extracting text and structure from your document...', color: 'from-blue-500 to-blue-600' },
   { icon: Brain, label: 'NLP Analysis', desc: 'Identifying skills, experience & education using AI...', color: 'from-purple-500 to-purple-600' },
   { icon: Shield, label: 'ATS Scoring', desc: 'Scoring against 6 industry benchmark categories...', color: 'from-emerald-500 to-emerald-600' },
@@ -20,8 +20,8 @@ const LOADING_STAGES = [
   { icon: Target, label: 'Ranking Results', desc: 'Ordering by hybrid match confidence score...', color: 'from-cyan-500 to-cyan-600' },
 ];
 
-/* ─── Rotating placeholder text ────────────────────────────────────────── */
-const ROLE_SUGGESTIONS = [
+// Just some random role suggestions for the placeholder effect
+const ROLE_EXAMPLES = [
   'Software Developer',
   'Data Scientist',
   'DevOps Engineer',
@@ -48,20 +48,20 @@ const ResumeUpload = () => {
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [shakeError, setShakeError] = useState(false);
 
-  /* ── Rotate placeholder text ───────────────────────────────────────── */
+  // Loop through placeholder roles every few seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setPlaceholderIdx(prev => (prev + 1) % ROLE_SUGGESTIONS.length);
+      setPlaceholderIdx(prev => (prev + 1) % ROLE_EXAMPLES.length);
     }, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  /* ── Staged progress animation ─────────────────────────────────────── */
+  // Fake progress animation for better UX - makes it feel like AI is "thinking"
   useEffect(() => {
     if (!loading) return;
     const stageInterval = setInterval(() => {
       setCurrentStage(prev => {
-        if (prev >= LOADING_STAGES.length - 1) { clearInterval(stageInterval); return prev; }
+        if (prev >= analysisSteps.length - 1) { clearInterval(stageInterval); return prev; }
         return prev + 1;
       });
     }, 900);
@@ -133,14 +133,15 @@ const ResumeUpload = () => {
     }, 600);
 
     try {
-      const res = await api.post('/analyze', formData, {
+      const res = await httpClient.post('/analyze', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       clearInterval(progressInterval);
       setProgress(100);
-      setCurrentStage(LOADING_STAGES.length - 1);
+      setCurrentStage(analysisSteps.length - 1);
       saveAnalysis(res.data);
       setSuccess(true);
+      // Wait a bit before navigating to show the success state
       setTimeout(() => navigate('/analysis'), 1800);
     } catch (err) {
       clearInterval(progressInterval);
@@ -158,7 +159,7 @@ const ResumeUpload = () => {
     { value: 'devops', label: 'DevOps', icon: '⚙️' },
   ];
 
-  /* ── SUCCESS STATE ─────────────────────────────────────────────────── */
+  // Render different UI based on state (Loading/Success/Form)
   if (success) {
     return (
       <PageWrapper className="p-12 flex flex-col items-center justify-center space-y-6 text-center animate-fade-in-up" style={{ minHeight: '70vh' }}>
@@ -188,7 +189,7 @@ const ResumeUpload = () => {
     );
   }
 
-  /* ── MAIN UPLOAD UI ─────────────────────────────────────────────────── */
+  // Main view for file selection and settings
   return (
     <PageWrapper className="max-w-4xl mx-auto space-y-7 pb-8">
       {/* ─── Hero Header ──────────────────────────────────────────────── */}
@@ -366,7 +367,7 @@ const ResumeUpload = () => {
             <div className="relative">
               <input
                 value={keyword} onChange={(e) => setKeyword(e.target.value)}
-                placeholder={`e.g. ${ROLE_SUGGESTIONS[placeholderIdx]}`}
+                placeholder={`e.g. ${ROLE_EXAMPLES[placeholderIdx]}`}
                 className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-gray-800 dark:text-gray-200 shadow-sm"
               />
             </div>
@@ -506,9 +507,9 @@ const ResumeUpload = () => {
                 </div>
               </div>
 
-              {/* Stage cards */}
+              {/* Mapping through analysis steps */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
-                {LOADING_STAGES.map((stage, idx) => {
+                {analysisSteps.map((stage, idx) => {
                   const Icon = stage.icon;
                   const isActive = idx === currentStage;
                   const isDone = idx < currentStage;
@@ -546,7 +547,7 @@ const ResumeUpload = () => {
                   <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '150ms' }} />
                   <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
-                <span className="font-medium">{LOADING_STAGES[currentStage]?.desc}</span>
+                <span className="font-medium">{analysisSteps[currentStage]?.desc}</span>
               </div>
             </div>
           )}

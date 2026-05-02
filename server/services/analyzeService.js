@@ -11,7 +11,7 @@ const {
 } = require('./matchingService');
 const { getIndustryTemplate } = require('./industryTemplateService');
 const { computeIndustryReadiness } = require('./industryReadinessService');
-const { metricsStore } = require('../middleware/metricsMiddleware');
+const { appStats } = require('../middleware/metricsMiddleware');
 const logger = require('../config/logger');
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
@@ -209,8 +209,8 @@ const analyzeResume = async ({
 
   // ── Metrics ─────────────────────────────────────────────────────────────
   const totalDuration = Date.now() - totalStart;
-  metricsStore.analyzeTimes.push(totalDuration);
-  metricsStore.totalAnalyzes++;
+  appStats.analyzeTimes.push(totalDuration);
+  appStats.totalAnalyzes++;
 
   logger.info(
     { totalDuration: `${totalDuration}ms`, parseDuration: `${parseDuration}ms`, matchDuration: `${matchDuration}ms` },

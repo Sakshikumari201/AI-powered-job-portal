@@ -4,86 +4,81 @@ const { OAuth2Client } = require('google-auth-library');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// @desc    Register a new user
-// @route   POST /api/users/register
-// @access  Public
+// Handles new user signup
 const registerUser = async (req, res, next) => {
   try {
     const { name, email, password, industry } = req.body;
 
-    const userExists = await User.findOne({ email });
+    // quick check if user is already in the db
+    const existingUser = await User.findOne({ email });
 
-    if (userExists) {
+    if (existingUser) {
       res.status(400);
       throw new Error('User already exists');
     }
 
-    const user = await User.create({
+    const newUser = await User.create({
       name,
       email,
       password,
       industry: industry || 'General',
     });
 
-    if (user) {
+    if (newUser) {
       res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        industry: user.industry,
-        token: generateToken(user._id),
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        industry: newUser.industry,
+        token: generateToken(newUser._id),
       });
     } else {
       res.status(400);
-      throw new Error('Invalid user data');
+      throw new Error('Something went wrong during registration');
     }
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 };
 
-// @desc    Auth user & get token
-// @route   POST /api/users/login
-// @access  Public
+// Standard login logic
 const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).select('+password');
+    const userRecord = await User.findOne({ email }).select('+password');
 
-    if (user && (await user.matchPassword(password))) {
+    if (userRecord && (await userRecord.matchPassword(password))) {
       res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        industry: user.industry,
-        avatar: user.avatar,
-        token: generateToken(user._id),
+        _id: userRecord._id,
+        name: userRecord.name,
+        email: userRecord.email,
+        role: userRecord.role,
+        industry: userRecord.industry,
+        avatar: userRecord.avatar,
+        token: generateToken(userRecord._id),
       });
     } else {
       res.status(401);
       throw new Error('Invalid email or password');
     }
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 };
 
-// @desc    Google OAuth login/register
-// @route   POST /api/users/google
-// @access  Public
+// Google OAuth integration
 const googleAuth = async (req, res, next) => {
   try {
     const { credential } = req.body;
 
     if (!credential) {
       res.status(400);
-      throw new Error('Google credential is required');
+      throw new Error('No google credential found');
     }
 
-    // Verify Google ID token
+    // Verify token with google
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
       audience: process.env.GOOGLE_CLIENT_ID,
@@ -92,18 +87,17 @@ const googleAuth = async (req, res, next) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
 
-    // Check if user exists
     let user = await User.findOne({ email });
 
     if (user) {
-      // Update googleId and avatar if not set
+      // Sync google info if missing
       if (!user.googleId) {
         user.googleId = googleId;
         user.avatar = picture;
         await user.save();
       }
     } else {
-      // Create new user (no password needed)
+      // Auto-create account for new google users
       user = await User.create({
         name,
         email,
@@ -122,14 +116,12 @@ const googleAuth = async (req, res, next) => {
       avatar: user.avatar,
       token: generateToken(user._id),
     });
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 };
 
-// @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private
+// Fetches current user info for dashboard
 const getUserProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
@@ -147,10 +139,10 @@ const getUserProfile = async (req, res, next) => {
       });
     } else {
       res.status(404);
-      throw new Error('User not found');
+      throw new Error('User not found in system');
     }
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 };
 
